@@ -26,6 +26,9 @@ func TestLiquify(t *testing.T) {
 			assert: func(t *testing.T, l *Liquified) {
 				assert.Equal(t, "assign description = \"test assignment statement\"", l.Ast.String())
 				assert.Equal(t, 0, len(l.FrontMatter))
+				v, err := PHP{}.Transpile(l)
+				assert.Nil(t, err)
+				assert.Equal(t, "<?php $description = \"test assignment statement\";?>", string(v))
 			},
 			config: testDefaultConfig(),
 		},

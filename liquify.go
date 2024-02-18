@@ -1,7 +1,11 @@
 package liquify
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
 	"github.com/adrg/frontmatter"
+	"github.com/richardjennings/liquify/expr"
 	"github.com/richardjennings/liquify/parser"
 	"log"
 	"os"
@@ -31,4 +35,48 @@ func Liquify(path string, config parser.Config) (*Liquified, error) {
 	}
 	l.Ast = n
 	return l, nil
+}
+
+type PHP struct {
+}
+
+func (p PHP) Transpile(l *Liquified) ([]byte, error) {
+	buf := bytes.NewBuffer(nil)
+	switch v := l.Ast.(type) {
+	case *parser.ASTSeq:
+		for _, n := range v.Children {
+			if err := p.transpile(buf, n); err != nil {
+				return nil, err
+			}
+		}
+	default:
+		return nil, errors.New("unhandled")
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (p PHP) transpile(b *bytes.Buffer, n parser.ASTNode) error {
+	switch n := n.(type) {
+	case *parser.ASTTag:
+		switch n.Name {
+		case "assign":
+			b.Write([]byte(fmt.Sprintf(`<?php $%s = %s;?>`, n.Expr.(expr.AssignmentStmt).Variable, p.trans(n.Expr.(expr.AssignmentStmt).ValueFn))))
+		}
+	}
+	return nil
+}
+
+func (p PHP) trans(e expr.Expr) string {
+	switch e := e.(type) {
+	case expr.LiteralExpr:
+		switch v := e.V.(type) {
+		case string:
+			return fmt.Sprintf(`"%v"`, v)
+		}
+	default:
+		fmt.Println(e)
+
+	}
+	return ""
 }

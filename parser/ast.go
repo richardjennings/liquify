@@ -37,6 +37,7 @@ func (a ASTRaw) String() string {
 // ASTTag is a tag {% tag %} that is not a block start or end.
 type ASTTag struct {
 	Token
+	Expr expr.Expr
 }
 
 func (a ASTTag) String() string {

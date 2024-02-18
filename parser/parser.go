@@ -93,7 +93,16 @@ func (c Config) parseTokens(tokens []Token) (ASTNode, Error) { // nolint: gocycl
 					panic(fmt.Errorf("block type %q", tok.Name))
 				}
 			} else {
-				*ap = append(*ap, &ASTTag{tok})
+				var exprs expr.Expr
+				var err error
+				switch tok.Name {
+				case "assign":
+					exprs, err = expr.ParseStatement(expr.AssignStatementSelector, tok.Args)
+					if err != nil {
+						return root, WrapError(err, tok)
+					}
+				}
+				*ap = append(*ap, &ASTTag{Token: tok, Expr: exprs})
 			}
 		}
 	}
