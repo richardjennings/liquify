@@ -60,9 +60,21 @@ func (p PHP) transpile(b *bytes.Buffer, n parser.ASTNode) error {
 	switch n := n.(type) {
 	case *parser.ASTTag:
 		switch n.Name {
+		case "if":
+			b.Write([]byte(fmt.Sprintf(`<?php if (%s) { ?>`, p.trans(n.Expr))))
+		case "else":
+			b.Write([]byte(fmt.Sprintf(`<?php } else { ?>`)))
+		case "endif":
+			b.Write([]byte("<?php } ?>"))
 		case "assign":
 			b.Write([]byte(fmt.Sprintf(`<?php $%s = %s;?>`, n.Expr.(expr.AssignmentStmt).Variable, p.trans(n.Expr.(expr.AssignmentStmt).ValueFn))))
+		default:
+			fmt.Println(n)
 		}
+	case *parser.ASTText:
+		b.Write([]byte(n.Source))
+	default:
+		fmt.Println(n)
 	}
 	return nil
 }
@@ -72,8 +84,21 @@ func (p PHP) trans(e expr.Expr) string {
 	case expr.LiteralExpr:
 		switch v := e.V.(type) {
 		case string:
-			return fmt.Sprintf(`"%v"`, v)
+			return fmt.Sprintf(`"%s"`, v)
 		}
+	case expr.ValStmt:
+		return p.trans(e.ValueFn)
+	case expr.EqExpr:
+		return fmt.Sprintf(`%s == %s`, p.trans(e.A), p.trans(e.B))
+	case expr.PropertyExpr:
+		switch e.V.(type) {
+		case expr.IdentExpr:
+			return fmt.Sprintf(`$%s["%s"]`, p.trans(e.V), e.Name)
+		default:
+			panic("variable names must be IdentExprs ?")
+		}
+	case expr.IdentExpr:
+		return fmt.Sprintf("%s", e.V)
 	default:
 		fmt.Println(e)
 

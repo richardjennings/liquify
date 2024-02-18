@@ -107,7 +107,7 @@ func MakeIdentExpr(expr Expr) IdentExpr {
 }
 
 func MakePropertyExpr(expr Expr, name string) PropertyExpr {
-	return PropertyExpr{V: expr}
+	return PropertyExpr{V: expr, Name: name}
 }
 
 func MakeIndexExpr(a Expr, b Expr) IndexExpr {

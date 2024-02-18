@@ -46,6 +46,16 @@ func TestLiquify(t *testing.T) {
 				expected := "assign description = \"if statement consuming front matter\"\n\nif page.some == \"value\"\nhello\nelse \ngoodbye\nendif "
 				assert.Equal(t, expected, l.Ast.String())
 				assert.Equal(t, 3, len(l.FrontMatter))
+				v, err := PHP{}.Transpile(l)
+				assert.Nil(t, err)
+				expected = `<?php $description = "if statement consuming front matter";?>
+
+<?php if ($page["some"] == "value") { ?>
+hello
+<?php } else { ?>
+goodbye
+<?php } ?>`
+				assert.Equal(t, expected, string(v))
 			},
 			config: testDefaultConfig(),
 		},

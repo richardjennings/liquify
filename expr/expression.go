@@ -10,7 +10,8 @@ type (
 		V interface{}
 	}
 	PropertyExpr struct {
-		V interface{}
+		V    interface{}
+		Name string
 	}
 	IndexExpr struct {
 		V interface{}
