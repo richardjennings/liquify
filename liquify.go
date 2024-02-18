@@ -17,16 +17,24 @@ type Liquified struct {
 	Ast         parser.ASTNode
 }
 
-func Liquify(path string, config parser.Config) (*Liquified, error) {
-	l := &Liquified{Path: path}
-	fh, err := os.Open(path)
+func LiquifyFromFile(path string, config parser.Config) (*Liquified, error) {
+	b, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() { _ = fh.Close() }()
+	l, err := Liquify(b, config)
+	if err != nil {
+		return nil, err
+	}
+	l.Path = path
+	return l, nil
+}
+
+func Liquify(content []byte, config parser.Config) (*Liquified, error) {
+	l := &Liquified{}
+	buf := bytes.NewBuffer(content)
 	fm := make(map[string]interface{})
-	template, err := frontmatter.Parse(fh, &fm)
-	fh.Close()
+	template, err := frontmatter.Parse(buf, &fm)
 	l.FrontMatter = fm
 	loc := parser.SourceLoc{}
 	n, err := config.Parse(string(template), loc)
