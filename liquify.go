@@ -77,7 +77,11 @@ func (p PHP) transpile(b *bytes.Buffer, n parser.ASTNode) error {
 		case "assign":
 			b.Write([]byte(fmt.Sprintf(`<?php $%s = %s;?>`, n.Expr.(expr.AssignmentStmt).Variable, p.trans(n.Expr.(expr.AssignmentStmt).ValueFn))))
 		default:
-			fmt.Println(n)
+			v, err := expr.Parse(n.Args)
+			if err != nil {
+				panic(err)
+			}
+			b.Write([]byte(fmt.Sprintf(`<?php echo %s(%s);?>`, n.Name, p.stmt(v))))
 		}
 	case *parser.ASTText:
 		b.Write([]byte(n.Source))
@@ -87,12 +91,26 @@ func (p PHP) transpile(b *bytes.Buffer, n parser.ASTNode) error {
 	return nil
 }
 
+func (p PHP) stmt(s expr.Statement) string {
+	switch s := s.(type) {
+	case expr.ValStmt:
+		return p.trans(s.ValueFn)
+	default:
+		fmt.Println(s)
+	}
+	return ""
+}
+
 func (p PHP) trans(e expr.Expr) string {
 	switch e := e.(type) {
 	case expr.LiteralExpr:
 		switch v := e.V.(type) {
 		case string:
 			return fmt.Sprintf(`"%s"`, v)
+		case expr.LiteralExpr:
+			return p.trans(v)
+		default:
+			fmt.Println(v)
 		}
 	case expr.ValStmt:
 		return p.trans(e.ValueFn)
@@ -107,6 +125,13 @@ func (p PHP) trans(e expr.Expr) string {
 		}
 	case expr.IdentExpr:
 		return fmt.Sprintf("%s", e.V)
+	case expr.FilterExpr:
+		// not sure about this as likely very specific implementation details
+		s := ""
+		for _, v := range e.Args {
+			s += p.trans(v)
+		}
+		return fmt.Sprintf("%s /* filter %s %s */", p.trans(e.V), e.Name, s)
 	default:
 		fmt.Println(e)
 

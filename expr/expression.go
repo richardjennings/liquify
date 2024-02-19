@@ -20,7 +20,9 @@ type (
 		V interface{}
 	}
 	FilterExpr struct {
-		V interface{}
+		V    interface{}
+		Name string
+		Args []LiteralExpr
 	}
 	EqExpr struct {
 		A Expr

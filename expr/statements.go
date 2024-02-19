@@ -119,7 +119,7 @@ func MakeRangeExpr(expr Expr, b Expr) RangeExpr {
 }
 
 func MakeFilterExpr(expr Expr, name string, args []LiteralExpr) FilterExpr {
-	return FilterExpr{V: expr}
+	return FilterExpr{V: expr, Name: name, Args: args}
 }
 
 func MakeEQExpr(a Expr, b Expr) EqExpr {

@@ -78,6 +78,28 @@ goodbye
 			},
 			config: testDefaultConfig(),
 		},
+		{
+			// filter support
+			content: `{% assign things = site.posts | where:"some","thing" %}`,
+			assert: func(t *testing.T, l *Liquified) {
+				v, err := PHP{}.Transpile(l)
+				assert.Nil(t, err)
+				expected := `<?php $things = $site["posts"] /* filter where "some""thing" */;?>`
+				assert.Equal(t, expected, string(v))
+			},
+			config: testDefaultConfig(),
+		},
+		{
+			// plugin
+			content: `{% j page.title %}`,
+			assert: func(t *testing.T, l *Liquified) {
+				v, err := PHP{}.Transpile(l)
+				assert.Nil(t, err)
+				expected := `<?php echo j($page["title"]);?>`
+				assert.Equal(t, expected, string(v))
+			},
+			config: testDefaultConfig(),
+		},
 	}
 	for i, tc := range tcs {
 		l, err := Liquify([]byte(tc.content), tc.config)
