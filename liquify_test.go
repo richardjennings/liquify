@@ -100,6 +100,36 @@ goodbye
 			},
 			config: testDefaultConfig(),
 		},
+		{
+			// capture
+			config:  testDefaultConfig(),
+			content: `{% capture background %}some value{% endcapture %}`,
+			assert: func(t *testing.T, l *Liquified) {
+				v, err := PHP{}.Transpile(l)
+				assert.Nil(t, err)
+				assert.Equal(t, `<?php $background = "some value";?>`, string(v))
+			},
+		},
+		{
+			// comment
+			config:  testDefaultConfig(),
+			content: `{% comment %}some value{% endcomment %}`,
+			assert: func(t *testing.T, l *Liquified) {
+				v, err := PHP{}.Transpile(l)
+				assert.Nil(t, err)
+				assert.Equal(t, `/* some value */`, string(v))
+			},
+		},
+		{
+			// for
+			config:  testDefaultConfig(),
+			content: `{% for a in page.thing %}some value{% endfor %}`,
+			assert: func(t *testing.T, l *Liquified) {
+				v, err := PHP{}.Transpile(l)
+				assert.Nil(t, err)
+				assert.Equal(t, `<?php for ($i, $a in $page["thing"]){ ?>some value<?php } ?>`, string(v))
+			},
+		},
 	}
 	for i, tc := range tcs {
 		l, err := Liquify([]byte(tc.content), tc.config)

@@ -76,6 +76,18 @@ func (p PHP) transpile(b *bytes.Buffer, n parser.ASTNode) error {
 			b.Write([]byte("<?php } ?>"))
 		case "assign":
 			b.Write([]byte(fmt.Sprintf(`<?php $%s = %s;?>`, n.Expr.(expr.AssignmentStmt).Variable, p.trans(n.Expr.(expr.AssignmentStmt).ValueFn))))
+		case "capture":
+			b.Write([]byte(fmt.Sprintf(`<?php $%s = "`, n.Token.Args)))
+		case "endcapture":
+			b.Write([]byte(`";?>`))
+		case "comment":
+			b.Write([]byte(`/* `))
+		case "endcomment":
+			b.Write([]byte(` */`))
+		case "for":
+			b.Write([]byte(fmt.Sprintf(`<?php for ($i, $%s in %s){ ?>`, n.Expr.(expr.LoopStmt).Variable, p.trans(n.Expr.(expr.LoopStmt).Expr))))
+		case "endfor":
+			b.Write([]byte(fmt.Sprintf(`<?php } ?>`)))
 		default:
 			v, err := expr.Parse(n.Args)
 			if err != nil {
