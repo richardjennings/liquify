@@ -46,14 +46,18 @@ func Liquify(content []byte, config parser.Config) (*Liquified, error) {
 }
 
 type PHP struct {
+	TagParsers map[string]func(b *bytes.Buffer, t *parser.ASTTag, p PHP) error
 }
 
 func (p PHP) Transpile(l *Liquified) ([]byte, error) {
+	if p.TagParsers == nil {
+		p.TagParsers = make(map[string]func(b *bytes.Buffer, t *parser.ASTTag, p PHP) error)
+	}
 	buf := bytes.NewBuffer(nil)
 	switch v := l.Ast.(type) {
 	case *parser.ASTSeq:
 		for _, n := range v.Children {
-			if err := p.transpile(buf, n); err != nil {
+			if err := p.AstNode(buf, n); err != nil {
 				return nil, err
 			}
 		}
@@ -64,18 +68,18 @@ func (p PHP) Transpile(l *Liquified) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (p PHP) transpile(b *bytes.Buffer, n parser.ASTNode) error {
+func (p PHP) AstNode(b *bytes.Buffer, n parser.ASTNode) error {
 	switch n := n.(type) {
 	case *parser.ASTTag:
 		switch n.Name {
 		case "if":
-			b.Write([]byte(fmt.Sprintf(`<?php if (%s) { ?>`, p.trans(n.Expr))))
+			b.Write([]byte(fmt.Sprintf(`<?php if (%s) { ?>`, p.Expr(n.Expr))))
 		case "else":
 			b.Write([]byte(fmt.Sprintf(`<?php } else { ?>`)))
 		case "endif":
 			b.Write([]byte("<?php } ?>"))
 		case "assign":
-			b.Write([]byte(fmt.Sprintf(`<?php $%s = %s;?>`, n.Expr.(expr.AssignmentStmt).Variable, p.trans(n.Expr.(expr.AssignmentStmt).ValueFn))))
+			b.Write([]byte(fmt.Sprintf(`<?php $%s = %s;?>`, n.Expr.(expr.AssignmentStmt).Variable, p.Expr(n.Expr.(expr.AssignmentStmt).ValueFn))))
 		case "capture":
 			b.Write([]byte(fmt.Sprintf(`<?php $%s = "`, n.Token.Args)))
 		case "endcapture":
@@ -85,15 +89,15 @@ func (p PHP) transpile(b *bytes.Buffer, n parser.ASTNode) error {
 		case "endcomment":
 			b.Write([]byte(` */`))
 		case "for":
-			b.Write([]byte(fmt.Sprintf(`<?php for ($i, $%s in %s){ ?>`, n.Expr.(expr.LoopStmt).Variable, p.trans(n.Expr.(expr.LoopStmt).Expr))))
+			b.Write([]byte(fmt.Sprintf(`<?php for ($i, $%s in %s){ ?>`, n.Expr.(expr.LoopStmt).Variable, p.Expr(n.Expr.(expr.LoopStmt).Expr))))
 		case "endfor":
 			b.Write([]byte(fmt.Sprintf(`<?php } ?>`)))
 		default:
-			v, err := expr.Parse(n.Args)
-			if err != nil {
-				panic(err)
+			if pfunc, ok := p.TagParsers[n.Name]; ok {
+				pfunc(b, n, p)
+			} else {
+				panic("not handled")
 			}
-			b.Write([]byte(fmt.Sprintf(`<?php echo %s(%s);?>`, n.Name, p.stmt(v))))
 		}
 	case *parser.ASTText:
 		b.Write([]byte(n.Source))
@@ -103,35 +107,35 @@ func (p PHP) transpile(b *bytes.Buffer, n parser.ASTNode) error {
 	return nil
 }
 
-func (p PHP) stmt(s expr.Statement) string {
+func (p PHP) Stmt(s expr.Statement) string {
 	switch s := s.(type) {
 	case expr.ValStmt:
-		return p.trans(s.ValueFn)
+		return p.Expr(s.ValueFn)
 	default:
 		fmt.Println(s)
 	}
 	return ""
 }
 
-func (p PHP) trans(e expr.Expr) string {
+func (p PHP) Expr(e expr.Expr) string {
 	switch e := e.(type) {
 	case expr.LiteralExpr:
 		switch v := e.V.(type) {
 		case string:
 			return fmt.Sprintf(`"%s"`, v)
 		case expr.LiteralExpr:
-			return p.trans(v)
+			return p.Expr(v)
 		default:
 			fmt.Println(v)
 		}
 	case expr.ValStmt:
-		return p.trans(e.ValueFn)
+		return p.Expr(e.ValueFn)
 	case expr.EqExpr:
-		return fmt.Sprintf(`%s == %s`, p.trans(e.A), p.trans(e.B))
+		return fmt.Sprintf(`%s == %s`, p.Expr(e.A), p.Expr(e.B))
 	case expr.PropertyExpr:
 		switch e.V.(type) {
 		case expr.IdentExpr:
-			return fmt.Sprintf(`$%s["%s"]`, p.trans(e.V), e.Name)
+			return fmt.Sprintf(`$%s["%s"]`, p.Expr(e.V), e.Name)
 		default:
 			panic("variable names must be IdentExprs ?")
 		}
@@ -141,9 +145,9 @@ func (p PHP) trans(e expr.Expr) string {
 		// not sure about this as likely very specific implementation details
 		s := ""
 		for _, v := range e.Args {
-			s += p.trans(v)
+			s += p.Expr(v)
 		}
-		return fmt.Sprintf("%s /* filter %s %s */", p.trans(e.V), e.Name, s)
+		return fmt.Sprintf("%s /* filter %s %s */", p.Expr(e.V), e.Name, s)
 	default:
 		fmt.Println(e)
 

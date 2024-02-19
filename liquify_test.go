@@ -1,6 +1,9 @@
 package liquify
 
 import (
+	"bytes"
+	"fmt"
+	"github.com/richardjennings/liquify/expr"
 	"github.com/richardjennings/liquify/parser"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -93,7 +96,19 @@ goodbye
 			// plugin
 			content: `{% j page.title %}`,
 			assert: func(t *testing.T, l *Liquified) {
-				v, err := PHP{}.Transpile(l)
+				p := PHP{
+					TagParsers: map[string]func(b *bytes.Buffer, t *parser.ASTTag, p PHP) error{
+						"j": func(b *bytes.Buffer, t *parser.ASTTag, p PHP) error {
+							v, err := expr.Parse(t.Args)
+							if err != nil {
+								panic(err)
+							}
+							b.Write([]byte(fmt.Sprintf(`<?php echo %s(%s);?>`, t.Name, p.Stmt(v))))
+							return nil
+						},
+					},
+				}
+				v, err := p.Transpile(l)
 				assert.Nil(t, err)
 				expected := `<?php echo j($page["title"]);?>`
 				assert.Equal(t, expected, string(v))
