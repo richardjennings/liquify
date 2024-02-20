@@ -19,6 +19,9 @@ type (
 	RangeExpr struct {
 		V interface{}
 	}
+	IncludeArgExpr struct {
+		Exprs []Expr
+	}
 	FilterExpr struct {
 		V    interface{}
 		Name string

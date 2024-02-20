@@ -111,6 +111,11 @@ func (c Config) parseTokens(tokens []Token) (ASTNode, Error) { // nolint: gocycl
 					if err != nil {
 						return root, WrapError(err, tok)
 					}
+				case "include":
+					exprs, err = IncludeParser{}.Parse(tok.Args)
+					if err != nil {
+						return root, WrapError(err, tok)
+					}
 				}
 				*ap = append(*ap, &ASTTag{Token: tok, Expr: exprs})
 			}

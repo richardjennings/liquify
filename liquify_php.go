@@ -55,6 +55,23 @@ func (p PHP) AstNode(b *bytes.Buffer, n parser.ASTNode) error {
 			b.Write([]byte(fmt.Sprintf(`<?php for ($i, $%s in %s){ ?>`, n.Expr.(expr.LoopStmt).Variable, p.Expr(n.Expr.(expr.LoopStmt).Expr))))
 		case "endfor":
 			b.Write([]byte(`<?php } ?>`))
+		case "include":
+			// first create an array of values to passs,
+			// then call a "render" function with the template and the array
+			argsExpr := n.Expr.(expr.IncludeArgExpr)
+			if len(argsExpr.Exprs) > 1 {
+				// create the array
+				b.Write([]byte(`<?php $values = [`))
+				for i, v := range argsExpr.Exprs[1:] {
+					if i%2 == 0 {
+						b.Write([]byte(fmt.Sprintf(`%s=>`, p.Expr(v))))
+					} else {
+						b.Write([]byte(fmt.Sprintf(`%s,`, p.Expr(v))))
+					}
+				}
+				b.Write([]byte(`]; ?>`))
+			}
+			b.Write([]byte(fmt.Sprintf(`<?php render(%s, $values);?>`, p.Expr(argsExpr.Exprs[0]))))
 		default:
 			if pfunc, ok := p.TagParsers[n.Name]; ok {
 				if err := pfunc(b, n, p); err != nil {
