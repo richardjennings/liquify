@@ -45,10 +45,10 @@ func (g Grammer) addBlockDef(ct *blockSyntax) {
 	g.blockDefs[ct.name] = ct
 }
 
-func (g Grammer) findBlockDef(name string) (*blockSyntax, bool) {
-	ct, found := g.blockDefs[name]
-	return ct, found
-}
+//func (g Grammer) findBlockDef(name string) (*blockSyntax, bool) {
+//	ct, found := g.blockDefs[name]
+//	return ct, found
+//}
 
 // BlockSyntax is part of the Grammar interface.
 func (g Grammer) BlockSyntax(name string) (BlockSyntax, bool) {

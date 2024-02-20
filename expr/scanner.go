@@ -204,10 +204,11 @@ var _expression_eof_trans []int16 = []int16{
 }
 
 const expression_start int = 23
-const expression_first_final int = 23
-const expression_error int = -1
 
-const expression_en_main int = 23
+//const expression_first_final int = 23
+//const expression_error int = -1
+//
+//const expression_en_main int = 23
 
 //line scanner.rl:11
 

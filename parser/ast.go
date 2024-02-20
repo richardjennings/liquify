@@ -50,7 +50,7 @@ type ASTText struct {
 }
 
 func (a ASTText) String() string {
-	return fmt.Sprintf("%s", a.Source)
+	return a.Source
 }
 
 // ASTObject is an {{ object }} object.

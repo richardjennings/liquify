@@ -98,6 +98,9 @@ func (c Config) parseTokens(tokens []Token) (ASTNode, Error) { // nolint: gocycl
 				switch tok.Name {
 				case "if":
 					exprs, err = expr.Parse(tok.Args)
+					if err != nil {
+						return root, WrapError(err, tok)
+					}
 				case "assign":
 					exprs, err = expr.ParseStatement(expr.AssignStatementSelector, tok.Args)
 					if err != nil {
