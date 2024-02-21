@@ -60,7 +60,7 @@ type ASTObject struct {
 }
 
 func (a ASTObject) String() string {
-	return "tbd"
+	return "" //@todo
 }
 
 // ASTSeq is a sequence of nodes.

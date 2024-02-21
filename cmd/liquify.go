@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/richardjennings/liquify"
+	"github.com/richardjennings/liquify/expr"
 	"github.com/richardjennings/liquify/parser"
 	"github.com/spf13/cobra"
 	"log"
@@ -32,7 +34,18 @@ var transpileCmd = &cobra.Command{
 				fmt.Println(err)
 				os.Exit(1)
 			}
-			o, err := liquify.PHP{}.Transpile(l)
+			o, err := liquify.PHP{
+				TagParsers: map[string]func(b *bytes.Buffer, t *parser.ASTTag, p liquify.PHP) error{
+					"t": func(b *bytes.Buffer, t *parser.ASTTag, p liquify.PHP) error {
+						v, err := expr.Parse(t.Args)
+						if err != nil {
+							panic(err)
+						}
+						b.Write([]byte(fmt.Sprintf(`<?php echo %s(%s);?>`, t.Name, p.Stmt(v))))
+						return nil
+					},
+				},
+			}.Transpile(l)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)

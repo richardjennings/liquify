@@ -15,6 +15,7 @@ type (
 	}
 	IndexExpr struct {
 		V interface{}
+		I interface{}
 	}
 	RangeExpr struct {
 		V interface{}

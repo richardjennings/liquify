@@ -2,7 +2,6 @@ package liquify
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/richardjennings/liquify/expr"
@@ -34,7 +33,7 @@ func (p PHP) Transpile(l *Liquified) ([]byte, error) {
 			}
 		}
 	default:
-		return nil, errors.New("unhandled")
+		return nil, fmt.Errorf("unhandled %#v", v)
 	}
 
 	return buf.Bytes(), nil
@@ -64,6 +63,12 @@ func (p PHP) AstNode(b *bytes.Buffer, n parser.ASTNode) error {
 			b.Write([]byte(fmt.Sprintf(`<?php for ($i, $%s in %s){ ?>`, n.Expr.(expr.LoopStmt).Variable, p.Expr(n.Expr.(expr.LoopStmt).Expr))))
 		case "endfor":
 			b.Write([]byte(`<?php } ?>`))
+		case "unless":
+			// @todo
+			b.Write([]byte(`<?php //@todo unless ?>`))
+		case "endunless":
+			// @todo
+			b.Write([]byte(`<?php //@todo endunless ?>`))
 		case "include":
 			// first create an array of values to passs,
 			// then call a "render" function with the template and the array
@@ -87,13 +92,15 @@ func (p PHP) AstNode(b *bytes.Buffer, n parser.ASTNode) error {
 					return err
 				}
 			} else {
-				panic("not handled")
+				return fmt.Errorf("%s not supported", n.Name)
 			}
 		}
 	case *parser.ASTText:
 		b.Write([]byte(n.Source))
+	case *parser.ASTObject:
+		b.Write([]byte(fmt.Sprintf("<?php echo %v;?>", p.Expr(n.Expr))))
 	default:
-		fmt.Println(n)
+		fmt.Printf("unhanded %#v\n", n)
 	}
 	return nil
 }
@@ -103,7 +110,7 @@ func (p PHP) Stmt(s expr.Statement) string {
 	case expr.ValStmt:
 		return p.Expr(s.ValueFn)
 	default:
-		fmt.Println(s)
+		fmt.Printf("unhanded %#v\n", s)
 	}
 	return ""
 }
@@ -116,8 +123,16 @@ func (p PHP) Expr(e expr.Expr) string {
 			return fmt.Sprintf(`"%s"`, v)
 		case expr.LiteralExpr:
 			return p.Expr(v)
+		case int:
+			return fmt.Sprintf(`%d`, v)
+		case bool:
+			return fmt.Sprintf(`%t`, v)
+		case expr.PropertyExpr:
+			return fmt.Sprintf(`<?php echo %s[%s];?>`, p.Expr(v.V), p.Expr(v.Name))
+		case expr.IdentExpr:
+			return fmt.Sprintf(`<?php echo %v;?>`, p.Expr(v.V))
 		default:
-			fmt.Println(v)
+			fmt.Printf("unhandled %#v\n", v)
 		}
 	case expr.ValStmt:
 		return p.Expr(e.ValueFn)
@@ -139,6 +154,10 @@ func (p PHP) Expr(e expr.Expr) string {
 			s += p.Expr(v)
 		}
 		return fmt.Sprintf("%s /* filter %s %s */", p.Expr(e.V), e.Name, s)
+	case expr.IndexExpr:
+		return fmt.Sprintf(`<?php echo %s[%s];?>`, p.Expr(e.V), p.Expr(e.I))
+	case string:
+		return e
 	default:
 		fmt.Println(e)
 

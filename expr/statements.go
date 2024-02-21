@@ -111,7 +111,7 @@ func MakePropertyExpr(expr Expr, name string) PropertyExpr {
 }
 
 func MakeIndexExpr(a Expr, b Expr) IndexExpr {
-	return IndexExpr{V: a}
+	return IndexExpr{V: a, I: b}
 }
 
 func MakeRangeExpr(expr Expr, b Expr) RangeExpr {
