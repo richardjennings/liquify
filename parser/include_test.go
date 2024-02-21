@@ -14,6 +14,14 @@ func TestParse_NoArgs(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestParse_VarArgs(t *testing.T) {
+	ip := IncludeParser{}
+	v, err := ip.Parse(`some/filepath.whatever value=var`)
+	expected := "{[{some/filepath.whatever} {value} {{var}}]}"
+	assert.Equal(t, expected, fmt.Sprintf("%s", v))
+	assert.Nil(t, err)
+}
+
 func TestParse_Inline(t *testing.T) {
 	ip := IncludeParser{}
 	v, err := ip.Parse(`some/filepath.whatever arg="test" another='test' yetanother=a.b`)

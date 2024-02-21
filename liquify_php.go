@@ -117,12 +117,12 @@ func (p PHP) Expr(e expr.Expr) string {
 	case expr.PropertyExpr:
 		switch e.V.(type) {
 		case expr.IdentExpr:
-			return fmt.Sprintf(`$%s["%s"]`, p.Expr(e.V), e.Name)
+			return fmt.Sprintf(`%s["%s"]`, p.Expr(e.V), e.Name)
 		default:
 			panic("variable names must be IdentExprs ?")
 		}
 	case expr.IdentExpr:
-		return fmt.Sprintf("%s", e.V)
+		return fmt.Sprintf("$%s", e.V)
 	case expr.FilterExpr:
 		// not sure about this as likely very specific implementation details
 		s := ""

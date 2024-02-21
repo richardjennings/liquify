@@ -148,14 +148,15 @@ goodbye
 		{
 			// include
 			config: testDefaultConfig(),
-			content: `{% include components/something.html title=page.title
+			content: `{% include components/something.html arg=var
+title=page.title
 background='some string value'
 something=page.something
 another="string" %}`,
 			assert: func(t *testing.T, l *Liquified) {
 				v, err := PHP{}.Transpile(l)
 				assert.Nil(t, err)
-				expected := `<?php $values = ["title"=>$page["title"],"background"=>"some string value","something"=>$page["something"],"another"=>"string",]; ?><?php render("components/something.html", $values);?>`
+				expected := `<?php $values = ["arg"=>$var,"title"=>$page["title"],"background"=>"some string value","something"=>$page["something"],"another"=>"string",]; ?><?php render("components/something.html", $values);?>`
 				assert.Equal(t, expected, string(v))
 			},
 		},
