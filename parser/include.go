@@ -134,12 +134,18 @@ func (ip IncludeParser) Parse(argLiteral string) (expr.IncludeArgExpr, error) {
 	}
 
 	if len(val) > 0 {
-		// we have an expression
-		e, err := expr.Parse(string(val))
-		if err != nil {
-			return ret, err
+		// if state is ExpectFilePath this is an include with no args
+		if state == ExpectFilePath {
+			exprs = append(exprs, expr.LiteralExpr{V: string(val)})
+		} else {
+			// @todo check state
+			// otherwise we have an expression
+			e, err := expr.Parse(string(val))
+			if err != nil {
+				return ret, err
+			}
+			exprs = append(exprs, e)
 		}
-		exprs = append(exprs, e)
 	}
 
 	if len(exprs) == 0 {

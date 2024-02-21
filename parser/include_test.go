@@ -6,6 +6,14 @@ import (
 	"testing"
 )
 
+func TestParse_NoArgs(t *testing.T) {
+	ip := IncludeParser{}
+	v, err := ip.Parse(`some/filepath.whatever`)
+	expected := "{[{some/filepath.whatever}]}"
+	assert.Equal(t, expected, fmt.Sprintf("%s", v))
+	assert.Nil(t, err)
+}
+
 func TestParse_Inline(t *testing.T) {
 	ip := IncludeParser{}
 	v, err := ip.Parse(`some/filepath.whatever arg="test" another='test' yetanother=a.b`)
