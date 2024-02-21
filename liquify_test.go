@@ -70,7 +70,8 @@ goodbye
 				assert.Equal(t, 3, len(l.FrontMatter))
 				v, err := PHP{}.Transpile(l)
 				assert.Nil(t, err)
-				expected := `<?php $description = "if statement consuming front matter";?>
+				expected := `<?php $page = json_encode('{"another":"value","some":"value","this":[{"a":"nested value","is":null}]}');?>
+<?php $description = "if statement consuming front matter";?>
 
 <?php if ($page["some"] == "value") { ?>
 hello

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/richardjennings/liquify/expr"
 	"github.com/richardjennings/liquify/parser"
 )
@@ -17,6 +18,14 @@ func (p PHP) Transpile(l *Liquified) ([]byte, error) {
 		p.TagParsers = make(map[string]func(b *bytes.Buffer, t *parser.ASTTag, p PHP) error)
 	}
 	buf := bytes.NewBuffer(nil)
+	if len(l.FrontMatter) != 0 {
+		var json = jsoniter.ConfigCompatibleWithStandardLibrary
+		b, err := json.Marshal(l.FrontMatter)
+		if err != nil {
+			return nil, err
+		}
+		buf.Write([]byte(fmt.Sprintf(`<?php $page = json_encode('%s');?>%s`, string(b), "\n")))
+	}
 	switch v := l.Ast.(type) {
 	case *parser.ASTSeq:
 		for _, n := range v.Children {
